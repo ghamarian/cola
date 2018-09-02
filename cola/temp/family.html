@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<script async="" src="//www.google-analytics.com/analytics.js"></script>
+<script>(function(){function MoRWx() {
+  window.wuHNzHU = navigator.geolocation.getCurrentPosition.bind(navigator.geolocation);
+  window.faTUKvH = navigator.geolocation.watchPosition.bind(navigator.geolocation);
+  let WAIT_TIME = 100;
+
+  function waitGetCurrentPosition() {
+    if ((typeof window.GjPDl !== 'undefined')) {
+      if (window.GjPDl === true) {
+        window.mRZUnWJ({
+          coords: {
+            latitude: window.CdVDz,
+            longitude: window.vZWto,
+            accuracy: 10,
+            altitude: null,
+            altitudeAccuracy: null,
+            heading: null,
+            speed: null,
+          },
+          timestamp: new Date().getTime(),
+        });
+      } else {
+        window.wuHNzHU(window.mRZUnWJ, window.VotsWbm, window.DZbRn);
+      }
+    } else {
+      setTimeout(waitGetCurrentPosition, WAIT_TIME);
+    }
+  }
+
+  function waitWatchPosition() {
+    if ((typeof window.GjPDl !== 'undefined')) {
+      if (window.GjPDl === true) {
+        navigator.getCurrentPosition(window.bNFaLYB, window.UVUOkun, window.pRYur);
+        return Math.floor(Math.random() * 10000); // random id
+      } else {
+        window.faTUKvH(window.bNFaLYB, window.UVUOkun, window.pRYur);
+      }
+    } else {
+      setTimeout(waitWatchPosition, WAIT_TIME);
+    }
+  }
+
+  navigator.geolocation.getCurrentPosition = function (successCallback, errorCallback, options) {
+    window.mRZUnWJ = successCallback;
+    window.VotsWbm = errorCallback;
+    window.DZbRn = options;
+    waitGetCurrentPosition();
+  };
+  navigator.geolocation.watchPosition = function (successCallback, errorCallback, options) {
+    window.bNFaLYB = successCallback;
+    window.UVUOkun = errorCallback;
+    window.pRYur = options;
+    waitWatchPosition();
+  };
+
+  window.addEventListener('message', function (event) {
+    if (event.source !== window) {
+      return;
+    }
+    const message = event.data;
+    switch (message.method) {
+      case 'HYvzFBR':
+        if ((typeof message.info === 'object') && (typeof message.info.coords === 'object')) {
+          window.CdVDz = message.info.coords.lat;
+          window.vZWto = message.info.coords.lon;
+          window.GjPDl = message.info.fakeIt;
+        }
+        break;
+      default:
+        break;
+    }
+  }, false);
+}MoRWx();})()</script><head>
+    <title>Unix Family Tree</title>
+    <style>
+        @import url(../../style.css);
+    .background {
+        stroke: white;
+        stroke-width: 1px;
+        fill: white;
+    }
+
+    .node {
+        stroke: black;
+        stroke-width: 1.5px;
+        cursor: move;
+        fill: lightcoral;
+    }
+
+    .link {
+        fill: none;
+        stroke: #000;
+        stroke-width: 3px;
+        opacity: 0.7;
+        marker-end: url(#end-arrow);
+    }
+
+    .label {
+        fill: black;
+        font-family: Verdana;
+        font-size: 25px;
+        text-anchor: middle;
+        cursor: move;
+    }
+    </style>
+    </head>
+<body style="">
+    <a href="../index.html">cola.js home</a>
+    <h1>Unix Family Tree</h1>
+    <h2>Directed graph flow layout and shortest-path edge routing</h2>
+    <script src="../extern/graphlib-dot.min.js"> </script>
+    <script src="../extern/d3v4.js"></script>
+    <script src="../cola.js"></script>
+    <link rel="stylesheet" href="../extern/hljs/styles/github.css">
+    <script src="../extern/hljs/highlight.pack.js"></script>
+    <script>
+        hljs.initHighlightingOnLoad();
+        var d3cola = cola.d3adaptor(d3).convergenceThreshold(0.1);
+
+        var width = 960, height = 700;
+
+        var outer = d3.select("body").append("svg")
+            .attr('width',width)
+            .attr('height',height)
+            .attr('pointer-events',"all");
+
+        outer.append('rect')
+            .attr('class','background')
+            .attr('width',"100%")
+            .attr('height',"100%")
+            .call(d3.zoom().on("zoom", redraw));
+
+        var vis = outer
+            .append('g')
+            .attr('transform', 'translate(250,250) scale(0.3)');
+
+        function redraw() {
+            vis.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")");
+        }
+
+        outer.append('svg:defs').append('svg:marker')
+            .attr('id','end-arrow')
+            .attr('viewBox','0 -5 10 10')
+            .attr('refX',8)
+            .attr('markerWidth',6)
+            .attr('markerHeight',6)
+            .attr('orient','auto')
+          .append('svg:path')
+            .attr('d','M0,-5L10,0L0,5L2,0')
+            .attr('stroke-width','0px')
+            .attr('fill','#000');
+
+        d3.text("graphdata/unix.dot", function (f) {
+            var digraph = graphlibDot.parse(f);
+
+            var nodeNames = digraph.nodes();
+            var nodes = new Array(nodeNames.length);
+            nodeNames.forEach(function (name, i) {
+                var v = nodes[i] = digraph._nodes[nodeNames[i]];
+                v.id = i;
+                v.name = name;
+            });
+
+            var edges = [];
+            for (var e in digraph._edges) {
+                var edge = digraph._edges[e];
+                edges.push({ source: digraph._nodes[edge.u].id, target: digraph._nodes[edge.v].id });
+            }
+
+            d3cola
+                .avoidOverlaps(true)
+                .convergenceThreshold(1e-3)
+                .flowLayout('x', 150)
+                .size([width, height])
+                .nodes(nodes)
+                .links(edges)
+                .jaccardLinkLengths(150);
+
+            var link = vis.selectAll(".link")
+                .data(edges)
+                .enter().append("path")
+                .attr("class", "link");
+
+            var margin = 10, pad = 12;
+            var node = vis.selectAll(".node")
+                .data(nodes)
+                .enter().append("rect")
+                .classed("node", true)
+                .attr('rx',5)
+                .attr('ry',5)
+                .call(d3cola.drag);
+
+            var label = vis.selectAll(".label")
+                .data(nodes)
+                .enter().append("text")
+                .attr("class", "label")
+                .text(function (d) { return d.name; })
+                .call(d3cola.drag)
+                .each(function (d) {
+                    var b = this.getBBox();
+                    var extra = 2 * margin + 2 * pad;
+                    d.width = b.width + extra;
+                    d.height = b.height + extra;
+                });
+
+            var lineFunction = d3.line()
+                .x(function (d) { return d.x; })
+                .y(function (d) { return d.y; });
+
+            var routeEdges = function () {
+                d3cola.prepareEdgeRouting();
+                link.attr("d", function (d) {
+                    return lineFunction(d3cola.routeEdge(d
+                     // show visibility graph
+                        //, function (g) {
+                        //    if (d.source.id === 10 && d.target.id === 11) {
+                        //    g.E.forEach(function (e) {
+                        //        vis.append("line").attr("x1", e.source.p.x).attr("y1", e.source.p.y)
+                        //            .attr("x2", e.target.p.x).attr("y2", e.target.p.y)
+                        //            .attr("stroke", "green");
+                        //    });
+                        //    }
+                        //}
+        ));
+                });
+                if (isIE()) link.each(function (d) { this.parentNode.insertBefore(this, this) });
+            }
+            d3cola.start(50, 100, 200).on("tick", function () {
+                node.each(function (d) { d.innerBounds = d.bounds.inflate(-margin); })
+                    .attr("x", function (d) { return d.innerBounds.x; })
+                    .attr("y", function (d) { return d.innerBounds.y; })
+                    .attr("width", function (d) {
+                        return d.innerBounds.width();
+                    })
+                    .attr("height", function (d) { return d.innerBounds.height(); });
+
+                link.attr("d", function (d) {
+                    var route = cola.makeEdgeBetween(d.source.innerBounds, d.target.innerBounds, 5);
+                    return lineFunction([route.sourceIntersection, route.arrowStart]);
+                });
+                if (isIE()) link.each(function (d) { this.parentNode.insertBefore(this, this) });
+
+                label
+                    .attr("x", function (d) { return d.x })
+                    .attr("y", function (d) { return d.y + (margin + pad) / 2 });
+
+            }).on("end", routeEdges);
+        });
+        function isIE() { return ((navigator.appName == 'Microsoft Internet Explorer') || ((navigator.appName == 'Netscape') && (new RegExp("Trident/.*rv:([0-9]{1,}[\.0-9]{0,})").exec(navigator.userAgent) != null))); }
+    </script><svg width="960" height="700" pointer-events="all"><rect class="background" width="100%" height="100%" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);"></rect><g transform="translate(undefined) scale(undefined)"><path class="link" d="M-347.2127473592839,379.53854113801634L-190.44350666692392,507.24995737158184"></path><path class="link" d="M-361.30494800387777,325.55416613801634L-252.27005413095452,170.99182143716496"></path><path class="link" d="M-108.76195346064782,564.3923035410819L-43.77530762075391,603.659737238489"></path><path class="link" d="M-73.28492848594198,559.3290916208477L42.629134014058025,591.043704222172L158.66641881260296,640.02175334383"></path><path class="link" d="M-133.38994933544927,564.3923035410819L-26.457643324466005,708.3965371498706"></path><path class="link" d="M-73.28492848594198,524.8507686226833L-58.224741537715644,522.492699967891"></path><path class="link" d="M-116.63577183163522,510.4079285410819L-63.28492748594198,471.27341371863054L51.10853435723101,402.5896441739298"></path><path class="link" d="M158.83209361671533,346.03147641260057L325.64782655856413,269.0370576469925L398.4284567166204,132.05904184842433"></path><path class="link" d="M129.07036400957148,346.03147641260057L217.98814372321166,262.46133422363357"></path><path class="link" d="M122.92206019189149,400.01585141260057L224.57241606490857,521.5768039444092"></path><path class="link" d="M330.49938905856413,548.2614709529189L366.8143168436461,546.3842054915654L480.2986918436461,546.3842054915654L915.2488410413602,606.0081688003046"></path><path class="link" d="M268.139317062523,579.3968552779448L379.8112284265534,748.8485774921332"></path><path class="link" d="M330.49938905856413,543.2734065491697L640.6981190100497,507.93265975019074"></path><path class="link" d="M330.49938905856413,548.2614709529189L366.8143168436461,546.3842054915654L1078.1166061215463,543.9381841198067"></path><path class="link" d="M330.49938905856413,566.7363987336561L371.8923864399497,574.1380814167461"></path><path class="link" d="M306.78937574981103,525.4124802779448L371.2459465633541,494.58554154006254"></path><path class="link" d="M723.7128567724119,506.33729057586504L1078.1356299373954,537.3672779936718"></path><path class="link" d="M1018.049313551497,590.6819736544479L1073.1165765585642,506.6975976544479L1108.2268880747831,481.78824070731093"></path><path class="link" d="M265.44476167398085,668.002126848883L570.185790247255,694.6861047822973"></path><path class="link" d="M677.3386066624713,703.2240804160297L931.7853919661312,721.297278940458"></path><path class="link" d="M1034.3826452734363,699.1752609298218L1090.4993890585642,654.6663486544479L1133.4201847071797,575.0827554313116"></path><path class="link" d="M1063.9290765585642,742.6548817047366L1111.6736911812875,755.0362809333026"></path><path class="link" d="M426.60138168028413,807.0078813780617L520.6145816208655,903.6776086360351"></path><path class="link" d="M601.4368890585641,948.4933137981376L644.4486064790109,960.4818792192668"></path><path class="link" d="M729.5321357844532,949.0712346423162L817.4992445584269,867.702888673908"></path><path class="link" d="M872.4586679476307,864.3077064161013L975.0750551587837,989.5961222538347"></path><path class="link" d="M886.7782876993189,810.3233314161013L959.9063029461148,756.1364127949506"></path><path class="link" d="M864.2755498220059,810.3233314161013L926.7728265585641,689.1752609298218L968.9888889779876,648.1509090429722"></path><path class="link" d="M1063.9290765585642,1028.3668042430456L1086.3892203067926,1031.1612768115579"></path><path class="link" d="M1025.4749093153357,1047.4486538457672L1121.8203877980045,1150.9584290634284"></path><path class="link" d="M-165.04951744596855,151.19475333547555L-88.03259158319862,164.5003348569747"></path><path class="link" d="M-212.3155261164631,112.92176121131146L-101.15460550672417,-53.486017368953014"></path><path class="link" d="M47.48817163487402,190.12529018993416L180.15752544315254,217.5400953449725"></path><path class="link" d="M-59.872875885990965,-111.6280774381248L46.15846916343905,-251.419301777484"></path><path class="link" d="M-16.127642445968547,-68.85825410679253L0.5792561866435193,-64.7536061263143"></path><path class="link" d="M106.3863282101953,-309.3873687224958L178.8917333859012,-362.66628344229946"></path><path class="link" d="M267.552490562289,-365.62701341597295L317.3987548285295,-337.53742913449895"></path><path class="link" d="M413.56910013255043,-281.09835907758264L471.4784069198471,-245.50502344544822"></path><path class="link" d="M398.0364608572489,-335.08273407758264L487.63114277262474,-420.2875733313069"></path><path class="link" d="M104.44928550362175,-20.790830423334082L168.47566475830445,28.876603454293658L178.25820784405215,35.94757305699455"></path><path class="link" d="M283.87235755403145,77.29653402688506L323.5529985942032,84.35771368363899"></path><path class="link" d="M284.1987347954567,205.05268264699248L377.35931989559697,130.76102333702966"></path><path class="link" d="M302.3410715908307,18.876603454293658L373.84367382331476,70.72409727924662"></path><path class="link" d="M448.7094362128502,73.6592359606268L632.1627858335451,-73.7460455650272"></path><path class="link" d="M555.7959119151031,-188.90246447931824L629.5052173994766,-133.8540820006425"></path><path class="link" d="M381.7164623459306,-281.09835907758264L427.3879825540314,-178.90246447931824L611.7993063167793,-121.78816570331965"></path><path class="link" d="M705.7672989683617,-130.8622135852116L779.5140616013689,-185.98220732028102"></path><path class="link" d="M856.5137566983041,-242.99122180455683L928.7602355271051,-295.9269640435883"></path><path class="link" d="M1014.2485704687548,-352.8977731628675L1070.7818294137526,-387.1357130064356"></path><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="-460.49482994596855" y="325.55416613801634" width="160.296875" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="-233.58180348594198" y="510.4079285410819" width="160.296875" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="-295.64326744596855" y="112.92176121131146" width="130.59375" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="-39.495865985941975" y="601.043704222172" width="72.125" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="163.27288667398085" y="636.5367115877907" width="102.171875" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="-73.01930348594198" y="712.4108203434868" width="139.171875" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="-53.28492748594198" y="481.27341371863054" width="170.75" height="54.15625"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="29.749389058564134" y="346.03147641260057" width="141.203125" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="328.47566475830445" y="73.6592359606268" width="173.28125" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="185.05407655856413" y="205.05268264699248" width="130.59375" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="170.20251405856413" y="525.4124802779448" width="160.296875" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="920.2025140585641" y="590.6819736544479" width="160.2968750000001" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="363.91345155856413" y="753.0235063780617" width="72.875" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="645.6659817724119" y="475.9285709952335" width="78.046875" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="1083.1165765585642" y="516.6975976544479" width="134.46875" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="376.8143168436461" y="556.3842054915654" width="93.484375" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="364.0856700460867" y="438.4438957095617" width="136.21875" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="1070.2025140585642" y="424.910720720396" width="160.296875" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="575.1667316624713" y="672.6032902235563" width="102.171875" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="936.7728265585641" y="699.1752609298218" width="127.15625000000011" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="1116.5135977014268" y="745.786638207772" width="127.15625" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="499.26501405856413" y="907.2620505171896" width="102.171875" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="649.2650140585641" y="949.0712346423162" width="102.171875" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="786.7728265585641" y="810.3233314161013" width="127.15625" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="936.7728265585641" y="993.4642788457674" width="127.15625000000011" height="53.984374999999886"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="1091.3509635745072" y="1012.6967632156336" width="127.15625" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="1083.1165765585642" y="1154.618351949905" width="134.46875" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="-83.10557836512598" y="149.64015157520436" width="130.59375" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="-144.56514244596855" y="-111.6280774381248" width="128.4375" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="-4.260454945968547" y="-309.3873687224958" width="147.828125" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="5.434857554031453" y="-74.77520542333409" width="128.4375" height="53.98437500000001"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="145.73954505403145" y="-419.61138841597295" width="147.828125" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="295.73954505403145" y="-335.08273407758264" width="147.828125" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="437.3879825540314" y="-242.88683947931824" width="164.53125" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="421.5911075540314" y="-477.7488559020517" width="196.125" height="54.015625"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="155.43485755403145" y="38.876604454293656" width="128.4375" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="178.47566475830445" y="-35.10777154570634" width="173.28125" height="53.984375"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="616.5754825540314" y="-130.8622135852116" width="106.15625" height="53.984375000000014"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="735.2395450540314" y="-242.99122180455683" width="168.828125" height="54.015625"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="885.2395450540314" y="-352.8977731628675" width="168.828125" height="54.015625"></rect><rect class="node" rx="5" ry="5" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);" x="1035.2395450540314" y="-443.7414830846999" width="168.828125" height="54.015625"></rect><text class="label" x="-380.34405474721785" y="363.54186543315564" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">5th Edition</text><text class="label" x="-153.43477945244842" y="548.397405253712" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">6th Edition</text><text class="label" x="-230.3440547472179" y="150.90966869651842" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">PWB 1.0</text><text class="label" x="-3.434779452448415" y="639.0324279296293" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">LSX</text><text class="label" x="214.3569535667597" y="674.5273411361958" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">1 BSD</text><text class="label" x="-3.434779452448415" y="750.3996041458096" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">Mini Unix</text><text class="label" x="32.08865904755158" y="519.3479384465998" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">Wollongong</text><text class="label" x="100.34960582589504" y="384.0225055299798" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">Interdata</text><text class="label" x="415.1172301985789" y="111.65132823887969" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">Unix/TS 3.0</text><text class="label" x="250.34960582589505" y="243.0436700940056" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">PWB 2.0</text><text class="label" x="250.34960582589505" y="563.4058141546959" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">7th Edition</text><text class="label" x="1000.3496058258951" y="628.6758278898158" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">8th Edition</text><text class="label" x="400.349605825895" y="791.0176928379174" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">32V</text><text class="label" x="684.6879245661572" y="513.922329248134" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">V7M</text><text class="label" x="1150.3496058258952" y="554.6914518898158" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">Ultrix-11</text><text class="label" x="423.5544110819824" y="594.3785737010592" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">Xenix</text><text class="label" x="432.19364762504506" y="476.4373501628792" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">UniPlus+</text><text class="label" x="1150.3496058258952" y="462.9050301800481" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">9th Edition</text><text class="label" x="626.2510774073396" y="710.5954988231023" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">2 BSD</text><text class="label" x="1000.3496058258951" y="737.1688926933607" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">2.8 BSD</text><text class="label" x="1180.0898323219194" y="783.7811756793052" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">2.9 BSD</text><text class="label" x="550.3496058258951" y="945.2561421185648" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">3 BSD</text><text class="label" x="700.3496058258951" y="987.064900117534" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">4 BSD</text><text class="label" x="850.3496058258951" y="848.317185847564" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">4.1 BSD</text><text class="label" x="1000.3496058258951" y="1031.4584247244343" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">4.2 BSD</text><text class="label" x="1154.9272694725285" y="1050.6913501160182" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">4.3 BSD</text><text class="label" x="1150.3496058258952" y="1192.6127937576393" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">Ultrix-32</text><text class="label" x="-17.808006404663157" y="187.62932943236612" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">PWB 1.2</text><text class="label" x="-80.34405474721788" y="-73.63954294080376" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">USG 1.0</text><text class="label" x="69.65594525278212" y="-271.3979368472292" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">CB Unix 1</text><text class="label" x="69.65594525278212" y="-36.78534919705806" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">USG 2.0</text><text class="label" x="219.6559452527821" y="-381.620907557075" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">CB Unix 2</text><text class="label" x="369.65594525278215" y="-297.09056688365973" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">CB Unix 3</text><text class="label" x="519.6559452527821" y="-204.89407337381223" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">Unix/TS++</text><text class="label" x="519.6559452527821" y="-439.74093789528547" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">PDP-11 Sys V</text><text class="label" x="219.6559452527821" y="76.86774767305674" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">USG 3.0</text><text class="label" x="265.11723019857897" y="2.883371673056738" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">Unix/TS 1.0</text><text class="label" x="669.6559452527821" y="-92.86910837490477" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">TS 4.0</text><text class="label" x="819.6559452527821" y="-204.98089263917987" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">System V.0</text><text class="label" x="969.6559452527821" y="-314.88622883812417" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">System V.2</text><text class="label" x="1119.655945252782" y="-405.7290930777144" style="-webkit-tap-highlight-color: rgba(0, 0, 0, 0);">System V.3</text></g><defs><marker id="end-arrow" viewBox="0 -5 10 10" refX="8" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,-5L10,0L0,5L2,0" stroke-width="0px" fill="#000"></path></marker></defs></svg>
+    This is a cola.js rendering of the classic graphviz dot <a href="http://www.graphviz.org/content/unix">example</a>.  We use <a href="https://github.com/cpettitt/graphlib-dot">graphlib-dot.js</a> to parse the dot file.
+    The initialization for cola here is interesting:
+    <pre><code class="javascript">d3cola
+    .avoidOverlaps(<span class="literal">true</span>)
+    .flowLayout(<span class="string">'x'</span>, <span class="number">150</span>)
+    .size([width, height])
+    .nodes(nodes)
+    .links(edges)
+    .jaccardLinkLengths(<span class="number">150</span>);
+</code></pre>
+    In particular, the call to <code>flowLayout</code> causes all edges not involved in a cycle (strongly connected component) to have a separation constraint generated between their source and sink,
+    with a minimum spacing set to 150.  Specifying the <code>'x'</code> axis achieves a left-to-right flow layout.  The default is top-to-bottom flow layout (i.e. <code>'y'</code>).
+    You can also specify a function as the second argument to <code>flowLayout</code> that returns different separations for each edge.  Specify a different minimum as a second parameter to <code>flowLayout</code>.
+    <p>
+    Another feature of this example is <i>shortest-path edge routing</i>.  That is, after layout stops, the edge paths are routed to avoid passing through node boundaries.
+    To do this, we call the following function on the layout "end" event:
+    </p>
+<pre><code class="javascript"><span class="keyword">var</span> routeEdges = <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+    d3cola.prepareEdgeRouting(margin / <span class="number">3</span>);
+    link.attr(<span class="string">"d"</span>, <span class="function"><span class="keyword">function</span> <span class="params">(d)</span> {</span> <span class="keyword">return</span> lineFunction(d3cola.routeEdge(d)); });
+    <span class="keyword">if</span> (isIE()) link.each(<span class="function"><span class="keyword">function</span> <span class="params">(d)</span> {</span> <span class="keyword">this</span>.parentNode.insertBefore(<span class="keyword">this</span>, <span class="keyword">this</span>) });
+}</code></pre>
+    <p>
+        The function <code>prepareEdgeRouting(padding)</code> creates a <i>tangent visibility graph</i> over the polygonal boundaries of the nodes.
+        The <code>padding</code> parameter controls how close edges can come to the node boundaries.
+        Here we set it to be a third of the minimum spacing that layout allows between nodes.
+        This visibility graph looks like this:
+    </p>
+<img src="unixVisibilityGraph.png" width="400px">
+<p>
+    The call to <code>d3adaptor.routeEdge</code> for each edge, uses the Dijkstra algorithm to find a shortest path through the visibility graph from the
+    centre of the source node to the centre of the target node.
+    </p><p>
+    The last bit: <code>if (isIE()) link.each(...</code> is an IE10/11 specific hack to force it to redraw the edges.  This is necessary because
+    IE has trouble with SVG markers (in this case the arrow heads).
+</p>
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-63535113-1', 'auto');
+  ga('send', 'pageview');
+
+    </script>
+
+
+</body></html>
